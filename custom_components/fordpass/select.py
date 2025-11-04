@@ -8,6 +8,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from custom_components.fordpass.const import (
     DOMAIN,
     COORDINATOR_KEY,
+    REMOTE_START_STATE_ACTIVE,
     RCC_SEAT_MODE_HEAT_ONLY, RCC_SEAT_OPTIONS_HEAT_ONLY
 )
 from custom_components.fordpass.const_tags import SELECTS, ExtSelectEntityDescription, Tag, RCC_TAGS
