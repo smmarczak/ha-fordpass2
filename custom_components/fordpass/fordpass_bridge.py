@@ -1980,10 +1980,14 @@ class ConnectedFordPassVehicle:
 
                 _LOGGER.debug(f"{self.vli}__request_command(): '{command}' response: {response}")
 
-                # not used yet - since we do not have a command_id or similar
-                # see: 'elif command == "setRemoteClimateControl":'
-                #if check_command is not None:
-                #    await self.__wait_for_state(command_id=None, state_command_str=check_command, use_websocket=self.ws_connected)
+                # Enable polling for commands that support it (e.g., RCC)
+                # The RCC endpoint returns only {"status": 200} without a command_id,
+                # but we can still poll for the 'publishProfilePreferencesR2Command' state change
+                if check_command is not None:
+                    _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully, now polling for vehicle execution via '{check_command}'...")
+                    result = await self.__wait_for_state(command_id=None, state_command_str=check_command, use_websocket=self.ws_connected)
+                    _LOGGER.info(f"{self.vli}__request_command(): '{command}' polling completed with result: {result}")
+                    return result
 
                 return True
 
