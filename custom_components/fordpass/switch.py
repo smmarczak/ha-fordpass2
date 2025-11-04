@@ -78,5 +78,5 @@ class FordPassSwitch(FordPassEntity, SwitchEntity):
         if self._tag == Tag.ELVEH_CHARGE:
             return state and Tag.EVCC_STATUS.get_state(self.coordinator.data) in ["B", "C"]
         elif self._tag in RCC_TAGS:
-           return state #and Tag.REMOTE_START_STATUS.get_state(self.coordinator.data) == REMOTE_START_STATE_ACTIVE
+           return state and Tag.REMOTE_START_STATUS.get_state(self.coordinator.data) == REMOTE_START_STATE_ACTIVE
         return state
