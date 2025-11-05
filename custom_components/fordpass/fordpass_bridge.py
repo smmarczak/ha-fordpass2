@@ -2234,7 +2234,30 @@ class ConnectedFordPassVehicle:
                                     return True
 
                                 elif to_state == "COMMAND_FAILED_ON_DEVICE":
-                                    _LOGGER.warning(f"{self.vli}__wait_for_state(): Command FAILED on device - vehicle rejected the command")
+                                    error_context = "unknown"
+                                    error_code = "unknown"
+
+                                    # Try to extract error details
+                                    try:
+                                        if "data" in resp_command_obj["value"] and "commandError" in resp_command_obj["value"]["data"]:
+                                            error_data = resp_command_obj["value"]["data"]["commandError"]
+                                            if "commandExecutionFailure" in error_data:
+                                                failure = error_data["commandExecutionFailure"]
+                                                error_context = failure.get("oemErrorContext", error_context)
+                                                error_code = failure.get("oemErrorCode", error_code)
+                                    except:
+                                        pass
+
+                                    # Special message for RCC failures on 2024+ vehicles
+                                    if state_command_str == "publishProfilePreferencesR2":
+                                        _LOGGER.warning(f"{self.vli}__wait_for_state(): RCC profile rejected by vehicle! "
+                                                      f"Error: {error_context} (code: {error_code}). "
+                                                      f"This is normal for 2024+ models that use vehicle-stored remote start settings. "
+                                                      f"Configure climate/seat behavior via vehicle's 'Remote Start Options' menu.")
+                                    else:
+                                        _LOGGER.warning(f"{self.vli}__wait_for_state(): Command FAILED on device - vehicle rejected the command. "
+                                                      f"Error: {error_context} (code: {error_code})")
+
                                     if not use_websocket:
                                         self.status_updates_allowed = True
                                     return False
