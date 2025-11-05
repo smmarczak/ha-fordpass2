@@ -1984,10 +1984,25 @@ class ConnectedFordPassVehicle:
                 # The RCC endpoint returns only {"status": 200} without a command_id,
                 # but we can still poll for the 'publishProfilePreferencesR2Command' state change
                 if check_command is not None:
-                    _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully, now polling for vehicle execution via '{check_command}'...")
-                    result = await self.__wait_for_state(command_id=None, state_command_str=check_command, use_websocket=self.ws_connected)
-                    _LOGGER.info(f"{self.vli}__request_command(): '{command}' polling completed with result: {result}")
-                    return result
+                    # For RCC commands, only poll if remote start is active
+                    # When vehicle is off, the profile update just stores settings on Ford's servers
+                    # without real-time feedback via WebSocket
+                    if command == "setRemoteClimateControl":
+                        countdown = self._data_container.get(ROOT_METRICS, {}).get("remoteStartCountdownTimer", {}).get("value", 0)
+                        if countdown > 0:
+                            _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully, remote start active - polling for vehicle execution via '{check_command}'...")
+                            result = await self.__wait_for_state(command_id=None, state_command_str=check_command, use_websocket=self.ws_connected)
+                            _LOGGER.info(f"{self.vli}__request_command(): '{command}' polling completed with result: {result}")
+                            return result
+                        else:
+                            _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully. Vehicle is off - profile updated on Ford servers, will be applied on next remote start.")
+                            return True
+                    else:
+                        # For other commands, poll as normal
+                        _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully, now polling for vehicle execution via '{check_command}'...")
+                        result = await self.__wait_for_state(command_id=None, state_command_str=check_command, use_websocket=self.ws_connected)
+                        _LOGGER.info(f"{self.vli}__request_command(): '{command}' polling completed with result: {result}")
+                        return result
 
                 return True
 
