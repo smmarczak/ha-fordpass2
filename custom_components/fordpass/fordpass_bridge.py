@@ -2218,14 +2218,20 @@ class ConnectedFordPassVehicle:
                                         self.status_updates_allowed = True
                                     return True
 
+                                elif to_state == "COMMAND_FAILED_ON_DEVICE":
+                                    _LOGGER.warning(f"{self.vli}__wait_for_state(): Command FAILED on device - vehicle rejected the command")
+                                    if not use_websocket:
+                                        self.status_updates_allowed = True
+                                    return False
+
                                 elif "EXPIRED" == to_state:
                                     _LOGGER.info(f"{self.vli}__wait_for_state(): Command EXPIRED - wait is OVER")
                                     if not use_websocket:
                                         self.status_updates_allowed = True
                                     return False
 
-                                elif "REQUEST_QUEUED" == to_state or "IN_PROGRESS" in to_state:
-                                    _LOGGER.debug(f"{self.vli}__wait_for_state(): toState: '{to_state}'")
+                                elif to_state in ["REQUEST_QUEUED", "DELIVERY_FROM_TMC_QUEUED", "RECEIVED_BY_DEVICE"] or "IN_PROGRESS" in to_state or "DELIVERY" in to_state:
+                                    _LOGGER.debug(f"{self.vli}__wait_for_state(): Command in progress, toState: '{to_state}'")
                                 else:
                                     _LOGGER.info(f"{self.vli}__wait_for_state(): UNKNOWN 'toState': {to_state}")
                             else:
