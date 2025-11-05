@@ -120,6 +120,6 @@ class FordPassSelect(FordPassEntity, SelectEntity):
             return False
 
         state = super().available
-        if self._tag in RCC_TAGS:
-           return state and Tag.REMOTE_START_STATUS.get_state(self.coordinator.data) == REMOTE_START_STATE_ACTIVE
+        # RCC availability check removed - 2024 Bronco requires RCC settings to be configured
+        # BEFORE remote start, not during. Settings are stored in profile and applied on next start.
         return state
