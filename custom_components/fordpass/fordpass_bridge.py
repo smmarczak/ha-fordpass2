@@ -1911,8 +1911,7 @@ class ConnectedFordPassVehicle:
             duration = HONK_AND_FLASH.DEFAULT
         return await self.__request_and_poll_command_autonomic(baseurl=AUTONOMIC_URL,
                                                                write_command="startPanicCue",
-                                                               properties={"duration": duration.value},
-                                                               wait_for_state=False)
+                                                               properties={"duration": duration.value})
 
     def request_update(self):
         """Send request to vehicle for update"""
