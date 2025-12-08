@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from numbers import Number
 from pathlib import Path
 from typing import Final, Iterable
+from urllib.parse import unquote
 
 import aiohttp
 from aiohttp import ClientConnectorError, ClientConnectionError
@@ -280,7 +281,9 @@ class ConnectedFordPassVehicle:
             redirect_schema = REGIONS[region_key]["redirect_schema"]
 
         _LOGGER.debug(f"{self.vli}generate_tokens() for country_code: {self.locale_code}")
+        # Extract and URL-decode the authorization code
         code_new = urlstring.replace(f"{redirect_schema}://userauthorized/?code=", "")
+        code_new = unquote(code_new)
 
         headers = {
             **loginHeadersOct2025,
