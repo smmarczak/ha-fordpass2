@@ -248,3 +248,11 @@ XEVBATTERYCHARGEDISPLAY_STATES:             Final = [XEVBATTERYCHARGEDISPLAY_STA
                                                      XEVBATTERYCHARGEDISPLAY_STATE_PAUSED, XEVBATTERYCHARGEDISPLAY_STATE_IN_PROGRESS,
                                                      XEVBATTERYCHARGEDISPLAY_STATE_STOPPED, XEVBATTERYCHARGEDISPLAY_STATE_FAULT,
                                                      XEVBATTERYCHARGEDISPLAY_STATION_NOT_DETECTED]
+
+# Honk and Flash durations
+from enum import Enum
+
+class HONK_AND_FLASH(Enum):
+    SHORT = 1
+    DEFAULT = 3
+    LONG = 5

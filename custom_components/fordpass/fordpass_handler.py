@@ -1146,3 +1146,15 @@ class FordpassDataHandler:
         await vehicle.cancel_charge()
     async def pause_charge_vehicle(coordinator, vehicle):
         await vehicle.pause_charge()
+
+    async def honk_and_light_short(coordinator, vehicle):
+        from custom_components.fordpass.const import HONK_AND_FLASH
+        await vehicle.honk_and_light(duration=HONK_AND_FLASH.SHORT)
+
+    async def honk_and_light(coordinator, vehicle):
+        from custom_components.fordpass.const import HONK_AND_FLASH
+        await vehicle.honk_and_light(duration=HONK_AND_FLASH.DEFAULT)
+
+    async def honk_and_light_long(coordinator, vehicle):
+        from custom_components.fordpass.const import HONK_AND_FLASH
+        await vehicle.honk_and_light(duration=HONK_AND_FLASH.LONG)

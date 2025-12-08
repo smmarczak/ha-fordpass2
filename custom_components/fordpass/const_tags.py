@@ -92,6 +92,12 @@ class Tag(ApiKey, Enum):
                                  press_fn=FordpassDataHandler.cancel_charge_vehicle)
     EV_PAUSE            = ApiKey(key="evpause",
                                  press_fn=FordpassDataHandler.pause_charge_vehicle)
+    HAF_SHORT           = ApiKey(key="haf_short",
+                                 press_fn=FordpassDataHandler.honk_and_light_short)
+    HAF_DEFAULT         = ApiKey(key="haf_default",
+                                 press_fn=FordpassDataHandler.honk_and_light)
+    HAF_LONG            = ApiKey(key="haf_long",
+                                 press_fn=FordpassDataHandler.honk_and_light_long)
 
     # LOCKS
     ##################################################
@@ -242,6 +248,20 @@ class Tag(ApiKey, Enum):
                                  attrs_fn=FordpassDataHandler.get_outside_temp_attrs)
     ENGINE_OIL_TEMP     = ApiKey(key="engineOilTemp",
                                  state_fn=lambda data: FordpassDataHandler.get_value_for_metrics_key(data, "engineOilTemp", None))
+
+    # Pedal and torque sensors
+    BRAKE_PEDAL_STATUS  = ApiKey(key="brakePedalStatus",
+                                 state_fn=lambda data: FordpassDataHandler.get_value_for_metrics_key(data, "brakePedalStatus"))
+    BRAKE_TORQUE        = ApiKey(key="brakeTorque",
+                                 state_fn=lambda data: FordpassDataHandler.get_value_for_metrics_key(data, "brakeTorque", None))
+    ACCELERATOR_PEDAL   = ApiKey(key="acceleratorPedalPosition",
+                                 state_fn=lambda data: FordpassDataHandler.get_value_for_metrics_key(data, "acceleratorPedalPosition", None))
+    PARKING_BRAKE       = ApiKey(key="parkingBrakeStatus",
+                                 state_fn=lambda data: FordpassDataHandler.get_value_for_metrics_key(data, "parkingBrakeStatus"))
+    TORQUE_TRANSMISSION = ApiKey(key="torqueAtTransmission",
+                                 state_fn=lambda data: FordpassDataHandler.get_value_for_metrics_key(data, "torqueAtTransmission", None))
+    WHEEL_TORQUE        = ApiKey(key="wheelTorqueStatus",
+                                 state_fn=lambda data: FordpassDataHandler.get_value_for_metrics_key(data, "wheelTorqueStatus"))
 
     # Environmental sensors
     CABIN_TEMP          = ApiKey(key="cabinTemp",
@@ -503,6 +523,48 @@ SENSORS = [
         has_entity_name=True,
     ),
 
+    # Pedal and torque sensors
+    ExtSensorEntityDescription(
+        tag=Tag.BRAKE_PEDAL_STATUS,
+        key=Tag.BRAKE_PEDAL_STATUS.key,
+        icon="mdi:car-brake-alert",
+        has_entity_name=True,
+    ),
+    ExtSensorEntityDescription(
+        tag=Tag.BRAKE_TORQUE,
+        key=Tag.BRAKE_TORQUE.key,
+        icon="mdi:car-brake-hold",
+        state_class=SensorStateClass.MEASUREMENT,
+        has_entity_name=True,
+    ),
+    ExtSensorEntityDescription(
+        tag=Tag.ACCELERATOR_PEDAL,
+        key=Tag.ACCELERATOR_PEDAL.key,
+        icon="mdi:arrow-up-bold-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        has_entity_name=True,
+    ),
+    ExtSensorEntityDescription(
+        tag=Tag.PARKING_BRAKE,
+        key=Tag.PARKING_BRAKE.key,
+        icon="mdi:car-brake-parking",
+        has_entity_name=True,
+    ),
+    ExtSensorEntityDescription(
+        tag=Tag.TORQUE_TRANSMISSION,
+        key=Tag.TORQUE_TRANSMISSION.key,
+        icon="mdi:arrow-up-bold-box",
+        state_class=SensorStateClass.MEASUREMENT,
+        has_entity_name=True,
+    ),
+    ExtSensorEntityDescription(
+        tag=Tag.WHEEL_TORQUE,
+        key=Tag.WHEEL_TORQUE.key,
+        icon="mdi:tire",
+        has_entity_name=True,
+    ),
+
     # Environmental sensors
     ExtSensorEntityDescription(
         tag=Tag.CABIN_TEMP,
@@ -697,6 +759,25 @@ BUTTONS = [
         tag=Tag.EV_PAUSE,
         key=Tag.EV_PAUSE.key,
         icon="mdi:pause-circle",
+        has_entity_name=True,
+        entity_registry_enabled_default=False
+    ),
+    ExtButtonEntityDescription(
+        tag=Tag.HAF_SHORT,
+        key=Tag.HAF_SHORT.key,
+        icon="mdi:car-search-outline",
+        has_entity_name=True
+    ),
+    ExtButtonEntityDescription(
+        tag=Tag.HAF_DEFAULT,
+        key=Tag.HAF_DEFAULT.key,
+        icon="mdi:car-search",
+        has_entity_name=True
+    ),
+    ExtButtonEntityDescription(
+        tag=Tag.HAF_LONG,
+        key=Tag.HAF_LONG.key,
+        icon="mdi:bugle",
         has_entity_name=True,
         entity_registry_enabled_default=False
     )

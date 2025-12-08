@@ -1904,6 +1904,16 @@ class ConnectedFordPassVehicle:
         """Issue an unlock command to the doors"""
         return await self.__request_and_poll_command_autonomic(baseurl=AUTONOMIC_URL, write_command="unlock")
 
+    async def honk_and_light(self, duration=None):
+        """Issue a honk and flash command to the vehicle"""
+        from custom_components.fordpass.const import HONK_AND_FLASH
+        if duration is None:
+            duration = HONK_AND_FLASH.DEFAULT
+        return await self.__request_and_poll_command_autonomic(baseurl=AUTONOMIC_URL,
+                                                               write_command="startPanicCue",
+                                                               properties={"duration": duration.value},
+                                                               wait_for_state=False)
+
     def request_update(self):
         """Send request to vehicle for update"""
         status = self.__request_and_poll_command_autonomic(baseurl=AUTONOMIC_URL, write_command="statusRefresh")
