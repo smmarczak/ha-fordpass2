@@ -281,9 +281,17 @@ class ConnectedFordPassVehicle:
             redirect_schema = REGIONS[region_key]["redirect_schema"]
 
         _LOGGER.debug(f"{self.vli}generate_tokens() for country_code: {self.locale_code}")
-        # Extract and URL-decode the authorization code
+        # Extract the authorization code
         code_new = urlstring.replace(f"{redirect_schema}://userauthorized/?code=", "")
-        code_new = unquote(code_new)
+
+        # Log the code before and after URL decoding for debugging
+        _LOGGER.debug(f"{self.vli}Authorization code (raw): {code_new[:50]}... (length: {len(code_new)})")
+        code_decoded = unquote(code_new)
+        _LOGGER.debug(f"{self.vli}Authorization code (decoded): {code_decoded[:50]}... (length: {len(code_decoded)})")
+        _LOGGER.debug(f"{self.vli}Code changed after decoding: {code_new != code_decoded}")
+
+        # Use the decoded version
+        code_new = code_decoded
 
         headers = {
             **loginHeadersOct2025,
@@ -297,6 +305,11 @@ class ConnectedFordPassVehicle:
             "code": code_new,
             "code_verifier": code_verifier,
         }
+
+        _LOGGER.debug(f"{self.vli}Token request - code_verifier: {code_verifier}")
+        _LOGGER.debug(f"{self.vli}Token request - redirect_uri: {data['redirect_uri']}")
+        _LOGGER.debug(f"{self.vli}Token request URL: {FORD_LOGIN_URL}/4566605f-43a7-400a-946e-89cc9fdb0bd7/{sign_up}{self.locale_code}/oauth2/v2.0/token")
+
         response = await self.session.post(
             f"{FORD_LOGIN_URL}/4566605f-43a7-400a-946e-89cc9fdb0bd7/{sign_up}{self.locale_code}/oauth2/v2.0/token",
             headers=headers,
