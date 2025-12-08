@@ -433,16 +433,28 @@ class FordPassDataUpdateCoordinator(DataUpdateCoordinator):
                                 _LOGGER.debug(f"{self.vli}GearLeverPosition support: {self._supports_GEARLEVERPOSITION}")
 
                             # remote climate control stuff...
+                            # First check what the vehicle reports
+                            vehicle_reports_rcc_support = False
+                            if "remoteClimateControl" in a_vehicle_profile:
+                                vehicle_reports_rcc_support = a_vehicle_profile["remoteClimateControl"]
+                            elif "remoteHeatingCooling" in a_vehicle_profile:
+                                vehicle_reports_rcc_support = a_vehicle_profile["remoteHeatingCooling"]
+
                             if self._force_REMOTE_CLIMATE_CONTROL:
                                 self._supports_REMOTE_CLIMATE_CONTROL = True
-                                _LOGGER.debug(f"{self.vli}RemoteClimateControl FORCED: {self._supports_REMOTE_CLIMATE_CONTROL}")
+                                if not vehicle_reports_rcc_support:
+                                    _LOGGER.warning(f"{self.vli}RemoteClimateControl FORCED but vehicle reports NO cloud RCC support! "
+                                                  f"RCC commands may be rejected by vehicle (common for 2024+ models). "
+                                                  f"Use vehicle's built-in 'Remote Start Options' menu instead.")
+                                else:
+                                    _LOGGER.debug(f"{self.vli}RemoteClimateControl FORCED: {self._supports_REMOTE_CLIMATE_CONTROL}")
                             else:
-                                if "remoteClimateControl" in a_vehicle_profile:
-                                    self._supports_REMOTE_CLIMATE_CONTROL = a_vehicle_profile["remoteClimateControl"]
+                                self._supports_REMOTE_CLIMATE_CONTROL = vehicle_reports_rcc_support
+                                if vehicle_reports_rcc_support:
                                     _LOGGER.debug(f"{self.vli}RemoteClimateControl support: {self._supports_REMOTE_CLIMATE_CONTROL}")
-                                elif "remoteHeatingCooling" in a_vehicle_profile:
-                                    self._supports_REMOTE_CLIMATE_CONTROL = a_vehicle_profile["remoteHeatingCooling"]
-                                    _LOGGER.debug(f"{self.vli}RemoteClimateControl/remoteHeatingCooling support: {self._supports_REMOTE_CLIMATE_CONTROL}")
+                                else:
+                                    _LOGGER.info(f"{self.vli}Vehicle does not support cloud-based RemoteClimateControl. "
+                                               f"Use vehicle's built-in 'Remote Start Options' menu to configure climate behavior.")
 
                             if "heatedSteeringWheel" in a_vehicle_profile:
                                 self._supports_HEATED_STEERING_WHEEL = a_vehicle_profile["heatedSteeringWheel"]
@@ -459,7 +471,7 @@ class FordPassDataUpdateCoordinator(DataUpdateCoordinator):
                             _LOGGER.debug(f"{self.vli}DriverHeatedSeat support mode: {self._supports_HEATED_HEATED_SEAT_MODE}")
                             break
                 else:
-                    _LOGGER.warning(f"{self.vli}No vehicleProfile in 'vehicles' found in coordinator data - no 'engineType' available! {self.data["vehicles"]}")
+                    _LOGGER.warning(f"{self.vli}No vehicleProfile in 'vehicles' found in coordinator data - no 'engineType' available! {self.data['vehicles']}")
 
                 # check, if RemoteStart is supported
                 if "vehicleCapabilities" in veh_data:
@@ -471,7 +483,7 @@ class FordPassDataUpdateCoordinator(DataUpdateCoordinator):
                             self._supports_ZONE_LIGHTING = self._check_if_veh_capability_supported("zoneLighting", capability_obj) and self._number_of_lighting_zones > 0
                             break
                 else:
-                    _LOGGER.warning(f"{self.vli}No vehicleCapabilities in 'vehicles' found in coordinator data - no 'support_remote_start' available! {self.data["vehicles"]}")
+                    _LOGGER.warning(f"{self.vli}No vehicleCapabilities in 'vehicles' found in coordinator data - no 'support_remote_start' available! {self.data['vehicles']}")
 
                 # check, if GuardMode is supported
                 # [original impl]
@@ -537,7 +549,7 @@ class FordPassDataUpdateCoordinator(DataUpdateCoordinator):
                             data = await self.bridge.update_all()
                             if data is not None:
                                 try:
-                                    _LOGGER.debug(f"{self.vli}_async_update_data: total number of items: {len(data[ROOT_METRICS])} metrics, {len(data[ROOT_MESSAGES])} messages, {len(data[ROOT_VEHICLES]["vehicleProfile"])} vehicles for {self._vin}")
+                                    _LOGGER.debug(f"{self.vli}_async_update_data: total number of items: {len(data[ROOT_METRICS])} metrics, {len(data[ROOT_MESSAGES])} messages, {len(data[ROOT_VEHICLES]['vehicleProfile'])} vehicles for {self._vin}")
                                 except BaseException:
                                     pass
 

@@ -8,6 +8,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from custom_components.fordpass.const import (
     DOMAIN,
     COORDINATOR_KEY,
+    REMOTE_START_STATE_ACTIVE,
     RCC_SEAT_MODE_HEAT_ONLY, RCC_SEAT_OPTIONS_HEAT_ONLY
 )
 from custom_components.fordpass.const_tags import SELECTS, ExtSelectEntityDescription, Tag, RCC_TAGS
@@ -98,12 +99,18 @@ class FordPassSelect(FordPassEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         try:
+            _LOGGER.info(f"SELECT {self._tag.key}: User selected '{option}'")
             if option is None or option=="" or str(option).lower() == "null" or str(option).lower() == "none":
                 await self._tag.async_select_option(self.coordinator.data, self.coordinator.bridge, None)
             else:
                 await self._tag.async_select_option(self.coordinator.data, self.coordinator.bridge, option)
+            _LOGGER.info(f"SELECT {self._tag.key}: Command completed")
 
-        except ValueError:
+        except ValueError as e:
+            _LOGGER.error(f"SELECT {self._tag.key}: ValueError - {e}")
+            return None
+        except Exception as e:
+            _LOGGER.error(f"SELECT {self._tag.key}: Unexpected error - {type(e).__name__}: {e}")
             return None
 
     @property
@@ -113,6 +120,6 @@ class FordPassSelect(FordPassEntity, SelectEntity):
             return False
 
         state = super().available
-        if self._tag in RCC_TAGS:
-           return state #and Tag.REMOTE_START_STATUS.get_state(self.coordinator.data) == REMOTE_START_STATE_ACTIVE
+        # RCC availability check removed - 2024 Bronco requires RCC settings to be configured
+        # BEFORE remote start, not during. Settings are stored in profile and applied on next start.
         return state

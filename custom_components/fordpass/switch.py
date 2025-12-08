@@ -4,7 +4,7 @@ import logging
 from homeassistant.components.switch import SwitchEntity
 
 from custom_components.fordpass import FordPassEntity, RCC_TAGS
-from custom_components.fordpass.const import DOMAIN, COORDINATOR_KEY
+from custom_components.fordpass.const import DOMAIN, COORDINATOR_KEY, REMOTE_START_STATE_ACTIVE
 from custom_components.fordpass.const_tags import SWITCHES, Tag
 from custom_components.fordpass.fordpass_handler import UNSUPPORTED
 
@@ -36,15 +36,25 @@ class FordPassSwitch(FordPassEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs):
         """Send request to vehicle on switch status on"""
-        await self._tag.turn_on_off(self.coordinator.data, self.coordinator.bridge, True)
-        await self.coordinator.async_request_refresh()
-        self.async_write_ha_state()
+        _LOGGER.info(f"SWITCH {self._tag.key}: User turned ON")
+        try:
+            await self._tag.turn_on_off(self.coordinator.data, self.coordinator.bridge, True)
+            await self.coordinator.async_request_refresh()
+            self.async_write_ha_state()
+            _LOGGER.info(f"SWITCH {self._tag.key}: Turn ON completed")
+        except Exception as e:
+            _LOGGER.error(f"SWITCH {self._tag.key}: Turn ON failed - {type(e).__name__}: {e}")
 
     async def async_turn_off(self, **kwargs):
         """Send request to vehicle on switch status off"""
-        await self._tag.turn_on_off(self.coordinator.data, self.coordinator.bridge, False)
-        await self.coordinator.async_request_refresh()
-        self.async_write_ha_state()
+        _LOGGER.info(f"SWITCH {self._tag.key}: User turned OFF")
+        try:
+            await self._tag.turn_on_off(self.coordinator.data, self.coordinator.bridge, False)
+            await self.coordinator.async_request_refresh()
+            self.async_write_ha_state()
+            _LOGGER.info(f"SWITCH {self._tag.key}: Turn OFF completed")
+        except Exception as e:
+            _LOGGER.error(f"SWITCH {self._tag.key}: Turn OFF failed - {type(e).__name__}: {e}")
 
     @property
     def is_on(self):
@@ -67,6 +77,6 @@ class FordPassSwitch(FordPassEntity, SwitchEntity):
         state = super().available
         if self._tag == Tag.ELVEH_CHARGE:
             return state and Tag.EVCC_STATUS.get_state(self.coordinator.data) in ["B", "C"]
-        elif self._tag in RCC_TAGS:
-           return state #and Tag.REMOTE_START_STATUS.get_state(self.coordinator.data) == REMOTE_START_STATE_ACTIVE
+        # RCC availability check removed - 2024 Bronco requires RCC settings to be configured
+        # BEFORE remote start, not during. Settings are stored in profile and applied on next start.
         return state

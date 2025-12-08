@@ -240,7 +240,7 @@ class ConnectedFordPassVehicle:
         filename = str(self._storage_path.joinpath(DOMAIN, "data_dumps", self.username, self.region_key, self.vin,
                                                    f"{a_datetime.year}", f"{a_datetime.month:02d}",
                                                    f"{a_datetime.day:02d}", f"{a_datetime.hour:02d}",
-                                                   f"{a_datetime.strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3]}_{type}.json"))
+                                                   f"{a_datetime.strftime('%Y-%m-%d_%H-%M-%S.%f')[:-3]}_{type}.json"))
         try:
             directory = os.path.dirname(filename)
             if not os.path.exists(directory):
@@ -810,7 +810,7 @@ class ConnectedFordPassVehicle:
 
                                 elif "_error" in ws_data:
                                     # in case of any error, we simply close the websocket connection
-                                    _LOGGER.info(f"{self.vli}ws_connect(): error object read: {ws_data["_error"]}")
+                                    _LOGGER.info(f"{self.vli}ws_connect(): error object read: {ws_data['_error']}")
                                     break
 
                                     # err_obj = ws_data["_error"]
@@ -955,7 +955,7 @@ class ConnectedFordPassVehicle:
                     if "value" in a_state_obj:
                         a_value_obj = a_state_obj["value"]
                         if "toState" in a_value_obj:
-                            _LOGGER.debug(f"{self.vli}ws(): new state '{a_state_name}' arrived -> toState: {a_value_obj["toState"]}")
+                            _LOGGER.debug(f"{self.vli}ws(): new state '{a_state_name}' arrived -> toState: {a_value_obj['toState']}")
                             to_state_value = a_value_obj["toState"].upper()
                             if to_state_value in ["SUCCESS", "COMMAND_SUCCEEDED_ON_DEVICE"]:
                                 if ROOT_METRICS in a_value_obj:
@@ -1017,7 +1017,7 @@ class ConnectedFordPassVehicle:
     #             if "value" in a_state_obj:
     #                 a_value_obj = a_state_obj["value"]
     #                 if "toState" in a_value_obj:
-    #                     _LOGGER.debug(f"{self.vli}ws(): new state '{a_state_name}' arrived -> toState: {a_value_obj["toState"]}")
+    #                     _LOGGER.debug(f"{self.vli}ws(): new state '{a_state_name}' arrived -> toState: {a_value_obj['toState']}")
     #                     if a_value_obj["toState"].lower() == "success":
     #                         if ROOT_METRICS in a_value_obj:
     #                             self._ws_update_key(a_value_obj, ROOT_METRICS, collected_keys)
@@ -1987,10 +1987,25 @@ class ConnectedFordPassVehicle:
                 # The RCC endpoint returns only {"status": 200} without a command_id,
                 # but we can still poll for the 'publishProfilePreferencesR2Command' state change
                 if check_command is not None:
-                    _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully, now polling for vehicle execution via '{check_command}'...")
-                    result = await self.__wait_for_state(command_id=None, state_command_str=check_command, use_websocket=self.ws_connected)
-                    _LOGGER.info(f"{self.vli}__request_command(): '{command}' polling completed with result: {result}")
-                    return result
+                    # For RCC commands, only poll if remote start is active
+                    # When vehicle is off, the profile update just stores settings on Ford's servers
+                    # without real-time feedback via WebSocket
+                    if command == "setRemoteClimateControl":
+                        countdown = self._data_container.get(ROOT_METRICS, {}).get("remoteStartCountdownTimer", {}).get("value", 0)
+                        if countdown > 0:
+                            _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully, remote start active - polling for vehicle execution via '{check_command}'...")
+                            result = await self.__wait_for_state(command_id=None, state_command_str=check_command, use_websocket=self.ws_connected)
+                            _LOGGER.info(f"{self.vli}__request_command(): '{command}' polling completed with result: {result}")
+                            return result
+                        else:
+                            _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully. Vehicle is off - profile updated on Ford servers, will be applied on next remote start.")
+                            return True
+                    else:
+                        # For other commands, poll as normal
+                        _LOGGER.info(f"{self.vli}__request_command(): '{command}' sent successfully, now polling for vehicle execution via '{check_command}'...")
+                        result = await self.__wait_for_state(command_id=None, state_command_str=check_command, use_websocket=self.ws_connected)
+                        _LOGGER.info(f"{self.vli}__request_command(): '{command}' polling completed with result: {result}")
+                        return result
 
                 return True
 
@@ -2221,14 +2236,43 @@ class ConnectedFordPassVehicle:
                                         self.status_updates_allowed = True
                                     return True
 
+                                elif to_state == "COMMAND_FAILED_ON_DEVICE":
+                                    error_context = "unknown"
+                                    error_code = "unknown"
+
+                                    # Try to extract error details
+                                    try:
+                                        if "data" in resp_command_obj["value"] and "commandError" in resp_command_obj["value"]["data"]:
+                                            error_data = resp_command_obj["value"]["data"]["commandError"]
+                                            if "commandExecutionFailure" in error_data:
+                                                failure = error_data["commandExecutionFailure"]
+                                                error_context = failure.get("oemErrorContext", error_context)
+                                                error_code = failure.get("oemErrorCode", error_code)
+                                    except:
+                                        pass
+
+                                    # Special message for RCC failures on 2024+ vehicles
+                                    if state_command_str == "publishProfilePreferencesR2":
+                                        _LOGGER.warning(f"{self.vli}__wait_for_state(): RCC profile rejected by vehicle! "
+                                                      f"Error: {error_context} (code: {error_code}). "
+                                                      f"This is normal for 2024+ models that use vehicle-stored remote start settings. "
+                                                      f"Configure climate/seat behavior via vehicle's 'Remote Start Options' menu.")
+                                    else:
+                                        _LOGGER.warning(f"{self.vli}__wait_for_state(): Command FAILED on device - vehicle rejected the command. "
+                                                      f"Error: {error_context} (code: {error_code})")
+
+                                    if not use_websocket:
+                                        self.status_updates_allowed = True
+                                    return False
+
                                 elif "EXPIRED" == to_state:
                                     _LOGGER.info(f"{self.vli}__wait_for_state(): Command EXPIRED - wait is OVER")
                                     if not use_websocket:
                                         self.status_updates_allowed = True
                                     return False
 
-                                elif "REQUEST_QUEUED" == to_state or "IN_PROGRESS" in to_state:
-                                    _LOGGER.debug(f"{self.vli}__wait_for_state(): toState: '{to_state}'")
+                                elif to_state in ["REQUEST_QUEUED", "DELIVERY_FROM_TMC_QUEUED", "RECEIVED_BY_DEVICE"] or "IN_PROGRESS" in to_state or "DELIVERY" in to_state:
+                                    _LOGGER.debug(f"{self.vli}__wait_for_state(): Command in progress, toState: '{to_state}'")
                                 else:
                                     _LOGGER.info(f"{self.vli}__wait_for_state(): UNKNOWN 'toState': {to_state}")
                             else:
