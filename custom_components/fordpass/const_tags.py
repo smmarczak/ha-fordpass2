@@ -527,12 +527,14 @@ SENSORS = [
     ExtSensorEntityDescription(
         tag=Tag.BRAKE_PEDAL_STATUS,
         key=Tag.BRAKE_PEDAL_STATUS.key,
+        name="Status Brake Pedal",
         icon="mdi:car-brake-alert",
         has_entity_name=True,
     ),
     ExtSensorEntityDescription(
         tag=Tag.BRAKE_TORQUE,
         key=Tag.BRAKE_TORQUE.key,
+        name="Brake Torque",
         icon="mdi:car-brake-hold",
         state_class=SensorStateClass.MEASUREMENT,
         has_entity_name=True,
@@ -540,6 +542,7 @@ SENSORS = [
     ExtSensorEntityDescription(
         tag=Tag.ACCELERATOR_PEDAL,
         key=Tag.ACCELERATOR_PEDAL.key,
+        name="Accelerator Pedal Position",
         icon="mdi:arrow-up-bold-outline",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
@@ -548,12 +551,14 @@ SENSORS = [
     ExtSensorEntityDescription(
         tag=Tag.PARKING_BRAKE,
         key=Tag.PARKING_BRAKE.key,
+        name="Status Parking Brake",
         icon="mdi:car-brake-parking",
         has_entity_name=True,
     ),
     ExtSensorEntityDescription(
         tag=Tag.TORQUE_TRANSMISSION,
         key=Tag.TORQUE_TRANSMISSION.key,
+        name="Torque at Transmission",
         icon="mdi:arrow-up-bold-box",
         state_class=SensorStateClass.MEASUREMENT,
         has_entity_name=True,
@@ -561,6 +566,7 @@ SENSORS = [
     ExtSensorEntityDescription(
         tag=Tag.WHEEL_TORQUE,
         key=Tag.WHEEL_TORQUE.key,
+        name="Status Wheel Torque",
         icon="mdi:tire",
         has_entity_name=True,
     ),
@@ -765,18 +771,21 @@ BUTTONS = [
     ExtButtonEntityDescription(
         tag=Tag.HAF_SHORT,
         key=Tag.HAF_SHORT.key,
+        name="Honk & Flash [1 sec.]",
         icon="mdi:car-search-outline",
         has_entity_name=True
     ),
     ExtButtonEntityDescription(
         tag=Tag.HAF_DEFAULT,
         key=Tag.HAF_DEFAULT.key,
+        name="Honk & Flash [3 sec.]",
         icon="mdi:car-search",
         has_entity_name=True
     ),
     ExtButtonEntityDescription(
         tag=Tag.HAF_LONG,
         key=Tag.HAF_LONG.key,
+        name="Honk & Flash [5 sec.]",
         icon="mdi:bugle",
         has_entity_name=True,
         entity_registry_enabled_default=False
