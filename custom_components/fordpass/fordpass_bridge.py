@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from numbers import Number
 from pathlib import Path
 from typing import Final, Iterable
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse, parse_qs
 
 import aiohttp
 from aiohttp import ClientConnectorError, ClientConnectionError
@@ -281,17 +281,25 @@ class ConnectedFordPassVehicle:
             redirect_schema = REGIONS[region_key]["redirect_schema"]
 
         _LOGGER.debug(f"{self.vli}generate_tokens() for country_code: {self.locale_code}")
-        # Extract the authorization code
-        code_new = urlstring.replace(f"{redirect_schema}://userauthorized/?code=", "")
+        _LOGGER.debug(f"{self.vli}Full redirect URL: {urlstring}")
 
-        # Log the code before and after URL decoding for debugging
-        _LOGGER.debug(f"{self.vli}Authorization code (raw): {code_new[:50]}... (length: {len(code_new)})")
-        code_decoded = unquote(code_new)
-        _LOGGER.debug(f"{self.vli}Authorization code (decoded): {code_decoded[:50]}... (length: {len(code_decoded)})")
-        _LOGGER.debug(f"{self.vli}Code changed after decoding: {code_new != code_decoded}")
+        # Properly parse the URL to extract ONLY the code parameter
+        # The URL format is: fordapp://userauthorized/?code=XXX&state=YYY&session_state=ZZZ
+        # We need to extract only the 'code' parameter value
+        parsed_url = urlparse(urlstring)
+        query_params = parse_qs(parsed_url.query)
 
-        # Use the decoded version
-        code_new = code_decoded
+        if 'code' not in query_params:
+            _LOGGER.error(f"{self.vli}No 'code' parameter found in redirect URL")
+            self.login_fail_reason = "No authorization code in redirect URL"
+            return False
+
+        # parse_qs returns a list of values for each parameter, get the first one
+        code_new = query_params['code'][0]
+
+        # Log the extracted code
+        _LOGGER.debug(f"{self.vli}Authorization code extracted: {code_new[:50]}... (length: {len(code_new)})")
+        _LOGGER.debug(f"{self.vli}Other parameters in URL: {[k for k in query_params.keys() if k != 'code']}")
 
         headers = {
             **loginHeadersOct2025,
